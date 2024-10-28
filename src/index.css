@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background-color: #0077b6;
+  --sidebar-bg-color: #03045e;
+  --course-bg-color: #48cae4;
+  --button-bg-color: #0077b6;
+  --button-hover-color: #023e8a;
+  --text-color: #ffffff;
+  --header-color: #023e8a;
+  --table-bg-color: #f1f1f1;
+  --border-color: #ccc;
+}
+
+
+.theme-light {
+  --background-color: #f5f5f5;
+  --sidebar-bg-color: #d6ccc2;
+  --course-bg-color: #0077b6;
+  --button-bg-color: #48cae4;
+  --button-hover-color: #0096c7;
+  --text-color: #000000;
+  --header-color: #023e8a;
+  --table-bg-color: #ffffff;
+  --border-color: #aaa;
+}
+
+.theme-dark {
+  --background-color: #001219;
+  --sidebar-bg-color: #005f73;
+  --course-bg-color: #0a9396;
+  --button-bg-color: #94d2bd;
+  --button-hover-color: #005f73;
+  --text-color: #ffffff;
+  --header-color: #0a9396;
+  --table-bg-color: #003845;
+  --border-color: #333;
+}
+
+
+.theme-autumn {
+  --background-color: #fef9ef;
+  --sidebar-bg-color: #f2e9e4;
+  --course-bg-color: #d8a47f;
+  --button-bg-color: #ba5d3b;
+  --button-hover-color: #8c3f24;
+  --text-color: #2b2118;
+  --header-color: #a35d3b;
+  --table-bg-color: #ffffff;
+  --border-color: #e6d5c3;
+}
+
+
+.theme-monochrome {
+  --background-color: #e5e5e5;
+  --sidebar-bg-color: #f0f0f0;
+  --course-bg-color: #d4d4d4;
+  --button-bg-color: #757575;
+  --button-hover-color: #424242;
+  --text-color: #212121;
+  --header-color: #424242;
+  --table-bg-color: #fafafa;
+  --border-color: #bdbdbd;
+}
+
+.theme-forest {
+  --background-color: #edf2e2;
+  --sidebar-bg-color: #a4c3b2;
+  --course-bg-color: #617d63;
+  --button-bg-color: #364d3b;
+  --button-hover-color: #1b3221;
+  --text-color: #1a1a1a;
+  --header-color: #2c3e2f;
+  --table-bg-color: #ffffff;
+  --border-color: #a9bfa7;
+}
+
+.theme-beige {
+  --background-color: #faf4e1;
+  --sidebar-bg-color: #e2d6cf;
+  --course-bg-color: #d4c3a3;
+  --button-bg-color: #a89d91;
+  --button-hover-color: #7c7363;
+  --text-color: #403d39;
+  --header-color: #5c5b57;
+  --table-bg-color: #ffffff;
+  --border-color: #c7b8a5;
+}
+
+.theme-ocean {
+  --background-color: #e0f7fa;
+  --sidebar-bg-color: #80deea;
+  --course-bg-color: #4dd0e1;
+  --button-bg-color: #26c6da;
+  --button-hover-color: #00acc1;
+  --text-color: #01579b;
+  --header-color: #0288d1;
+  --table-bg-color: #ffffff;
+  --border-color: #b2ebf2;
+}
+
+.theme-pastel {
+  --background-color: #ffebf3;
+  --sidebar-bg-color: #ffe1ea;
+  --course-bg-color: #ffd6e8;
+  --button-bg-color: #ff9aa2;
+  --button-hover-color: #ff758f;
+  --text-color: #6d214f;
+  --header-color: #c44569;
+  --table-bg-color: #ffffff;
+  --border-color: #f7c1d2;
+}
