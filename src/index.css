@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
 :root {
   --background-color: #0077b6;
   --sidebar-bg-color: #03045e;
