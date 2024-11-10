@@ -98,13 +98,15 @@ export default function Home() {
     if (weight === 100) {
       let acc = 0;
       assessments.forEach(assessment => {
+      if(assessment.marks && assessment.outOf){
         acc += (assessment.marks / assessment.outOf) * assessment.weight;
+      }
       });
       setCalculated(acc);
     } else {
       let acc = 0;
       assessments.forEach(assessment => {
-        if (!assessment.isBonus) {
+        if(assessment.marks && assessment.outOf){
           acc += (assessment.marks / assessment.outOf) * assessment.weight * 100;
         }
       });
