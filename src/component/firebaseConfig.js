@@ -6,7 +6,7 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBC5EqqRFFpEPsWz9Vqz2Ir_gPK1AGzDQQ",
-  authDomain: "grade-sync-a17e5.firebaseapp.com",
+  authDomain: "gradesync.site",
   projectId: "grade-sync-a17e5",
   storageBucket: "grade-sync-a17e5.appspot.com",
   messagingSenderId: "211799778124",
