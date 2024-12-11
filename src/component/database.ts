@@ -1,5 +1,5 @@
 import { doc, setDoc, getDoc } from "firebase/firestore"; 
-import { db, auth } from './firebaseConfig.js';
+import { db, auth } from './firebaseConfig.ts';
 
 export const writeGrades = async (grades) => {
     const user = auth.currentUser;

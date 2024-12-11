@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { auth, googleProvider } from "./component/firebaseConfig.js";
-import { writeGrades, readGrades } from "./component/database.js";
+import { auth, googleProvider } from "./component/firebaseConfig.ts";
+import { writeGrades, readGrades } from "./component/database.ts";
 import { signInWithPopup, signOut } from "firebase/auth";
 
 const example = {
