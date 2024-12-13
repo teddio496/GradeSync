@@ -1,7 +1,8 @@
 import { doc, setDoc, getDoc } from "firebase/firestore"; 
-import { db, auth } from './firebaseConfig.ts';
+import { db, auth } from './firebaseConfig';
+import { grade, assessment } from "../types/type";
 
-export const writeGrades = async (grades) => {
+export const writeGrades = async (grades: grade[]) => {
     const user = auth.currentUser;
     if (user) {
         console.log(user.uid);

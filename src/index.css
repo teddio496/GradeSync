@@ -2,8 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'SomeType'; 
+  src: url('/src/fonts/SometypeMono.ttf') format('ttf');
+  font-weight: normal; 
+  font-style: normal;  
+}
 
-
+@layer base {
+  :root {
+    --color-text-base: #FFFFFF;
+    --color-background: #3F3F3F;
+    --color-foreground: #444444;
+    --color-highlight: #2F2F2F;
+    --color-text-sub: gray;
+  }
+}
+/*
 :root {
   --background-color: #0077b6;
   --sidebar-bg-color: #03045e;
@@ -114,3 +129,4 @@
   --table-bg-color: #ffffff;
   --border-color: #f7c1d2;
 }
+*/

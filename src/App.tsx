@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { auth, googleProvider } from "./component/firebaseConfig";
+import { auth, googleProvider, User } from "./component/firebaseConfig";
 import { writeGrades, readGrades } from "./component/database";
 import { signInWithPopup, signOut } from "firebase/auth";
+import { grade, assessment, gradingSchemes, calculateGradeForSchool } from "./types/type";
+import toast from "react-hot-toast";
+import { IconPalette, IconUserCircle, IconDeviceFloppy, IconArchive, IconTrash, IconLogout, IconInfoCircle } from "@tabler/icons-react";
 
-const example = {
+const example: grade = {
   courseName: "Course Name",
+  school: "UofT",
   assessments: [
     { name: "Assignment 1", marks: 100, outOf: 100, weight: 10, isBonus: false },
     { name: "Lab 2", marks: 100, outOf: 100, weight: 10, isBonus: false },
@@ -12,16 +16,15 @@ const example = {
   ]
 }
 
-
 export default function Home() {
-  const [theme, setTheme] = useState("theme-autumn");
-  const [allGrades, setAllGrades] = useState([example]);
-  const [grades, setGrades] = useState(allGrades[0]);
+
+  const [allGrades, setAllGrades] = useState<grade[]>([example]);
+  const [grades, setGrades] = useState<grade>(allGrades[0]);
   const [gradesIndex, setGradesIndex] = useState(0);
   const [calculated, setCalculated] = useState(0);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [totalWeight, setTotalWeight] = useState(0);
-
+  const [school, setSchool] = useState("UofT");
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(setUser); 
@@ -29,17 +32,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
     async function fetchData() {
       if (auth.currentUser) {
         const user_grades = await readGrades();
         if (user_grades) {
+          user_grades.forEach((grade: grade) => {if (!grade.school) {grade.school = "UofT";}});
           setAllGrades(user_grades);
           setGrades(user_grades[0]);
           localStorage.setItem("allGrades", JSON.stringify(user_grades));
@@ -60,6 +57,7 @@ export default function Home() {
   useEffect(() => {
     calculateGrade(grades.assessments)
   }, [grades])
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -89,12 +87,14 @@ export default function Home() {
     }
   };
 
-  const calculateGrade = (assessments) => {
+  const calculateGrade = (assessments: assessment[]) => {
 
     let weight = 0;
-    assessments.forEach((assessment) => weight += parseFloat(assessment.isBonus ? 0 : assessment.weight))
+    assessments.forEach((assessment) => weight += assessment.isBonus ? 0 : assessment.weight)
+    
     setTotalWeight(weight); 
-    console.log(weight)
+    console.log(weight);
+
     if (weight === 100) {
       let acc = 0;
       assessments.forEach(assessment => {
@@ -114,57 +114,80 @@ export default function Home() {
     }
   };
   
-  const handleTextChange = (index, value, field) => {
+  const handleTextChange = (index: number, value: string) => {
     const newAssessments = [...grades.assessments];
-    newAssessments[index][field] = value; 
+    newAssessments[index]["name"] = value;
     setGrades({ ...grades, assessments: newAssessments });
-    calculateGrade(newAssessments)
+    calculateGrade(newAssessments);
   };
-
-  const handleChange = (index, value, field) => {
+  
+  const handleChange = (index: number, value: string | number, field: keyof assessment) => {
     const newAssessments = [...grades.assessments];
-    newAssessments[index][field] = value; 
+  
+    // Type-safe assignment
+    if (field === "marks" || field === "outOf" || field === "weight") {
+      newAssessments[index][field] = Number(value) as any; // Explicitly cast to bypass type issues
+    } else if (field === "name") {
+      newAssessments[index][field] = value as string;
+    } else if (field === "isBonus") {
+      newAssessments[index][field] = value === "true"; // Convert to boolean
+    }
+  
     setGrades({ ...grades, assessments: newAssessments });
   
-    const numericAssessments = newAssessments.map(assessment => ({
+    // Ensure numeric fields are converted properly
+    const numericAssessments = newAssessments.map((assessment) => ({
       ...assessment,
-      [field]: assessment[field] === "" ? 0 : Number(assessment[field])
+      [field]: field === "marks" || field === "outOf" || field === "weight"
+        ? Number(value)
+        : value,
     }));
+  
     calculateGrade(numericAssessments);
   };
   
   const handleAddAssessment = () => {
     const newAssessments = [...grades.assessments];
-    newAssessments.push({name: "", marks:0, outOf: 100, weight: 0})
-    setGrades({ ...grades, assessments: newAssessments});
-  }
+    newAssessments.push({ name: "", marks: 0, outOf: 100, weight: 0, isBonus: false });
+    setGrades({ ...grades, assessments: newAssessments });
+  };
 
-  const handleBonusChange = (index, value) => {
+  const handleRemoveAssessment = (index: number) => {
+    const newAssessments = grades.assessments.filter((_, i) => i !== index);
+    setGrades({ ...grades, assessments: newAssessments });
+  };
+  
+  const handleBonusChange = (index: number, value: boolean) => {
     const newAssessments = [...grades.assessments];
     newAssessments[index].isBonus = value;
-    setGrades({ ...grades, assessments: newAssessments});
-  }
+    setGrades({ ...grades, assessments: newAssessments });
+  };
 
-  const handleCourseClick = (index) => {
-    if (JSON.stringify(allGrades[gradesIndex]) !== JSON.stringify(grades)){
-      window.confirm("Any changes you have made will not be saved, are you sure you want to proceed?");
-      return;
+  const handleCourseClick = (index: number) => {
+    if (JSON.stringify(allGrades[gradesIndex]) !== JSON.stringify(grades)) {
+      const proceed = window.confirm("Any changes you have made will not be saved, are you sure you want to proceed?");
+      if (!proceed) return;
     }
     setGrades(JSON.parse(JSON.stringify(allGrades[index])));
-    setGradesIndex(index)
-  }
-
- const handleThemeChange = () => {
-    const allTheme = [
-      "theme-autumn", "theme-monochrome", "theme-forest",
-      "theme-beige", "theme-ocean", "theme-pastel",
-      "theme-light", "theme-dark"
-    ];
-    const theme_index = allTheme.indexOf(theme) + 1;
-    const newTheme = theme_index === allTheme.length ? "theme-autumn" : allTheme[theme_index];
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
+    setGradesIndex(index);
   };
+
+  const handleAddCourse = () => {
+    if (JSON.stringify(allGrades[gradesIndex]) !== JSON.stringify(grades)) {
+      const proceed = window.confirm(
+        "Any changes you have made will not be saved, are you sure you want to proceed?"
+      );
+      if (!proceed) return;
+    }
+
+    const newGrades = [...allGrades, example];
+    
+    setAllGrades(newGrades);
+    setGrades(example); 
+    setGradesIndex(newGrades.length - 1);
+    toast("course added")
+  };
+  
 
   const removeCourse = async () => {
     const course = grades.courseName;
@@ -173,13 +196,16 @@ export default function Home() {
     if (isConfirmed) {
       const allGradeCopy = [...allGrades];
       const index = gradesIndex;
-
+      if (allGradeCopy.length === 1){ 
+        toast("Cannot remove, Only one left!");
+        return;
+      }
       if (index !== -1) {
         allGradeCopy.splice(index, 1);
         setAllGrades(allGradeCopy);
         await writeGrades(allGradeCopy);
-        localStorage.setItem("allGrades", JSON.stringify(allGradeCopy))
-
+        localStorage.setItem("allGrades", JSON.stringify(allGradeCopy));
+  
         if (index === 0 && allGrades.length > 1) {
           setGrades(JSON.parse(JSON.stringify(allGrades[1])));
           setGradesIndex(1);
@@ -187,27 +213,18 @@ export default function Home() {
           setGrades(JSON.parse(JSON.stringify(allGrades[0])));
           setGradesIndex(0);
         } else {
-          setGrades(null); 
+          setGrades(example); // Use default example if no grades are left
         }
       }
     }
+
+    toast("course removed")
   };
-  
-  const handleAddCourse = () => { 
-    if (JSON.stringify(allGrades[gradesIndex]) !== JSON.stringify(grades)){
-      window.confirm("Any changes you have made will not be saved, are you sure you want to proceed?");
-      return;
-    }
 
-    setAllGrades([...allGrades, example]);
-    handleCourseClick(allGrades.length - 1);
-  }
-
-  const handleCourseNameChange = (changed) => {
-    const grades_copy = JSON.parse(JSON.stringify(grades))
-    grades_copy.courseName = changed;
-    setGrades(grades_copy)
-  }
+  const handleCourseNameChange = (changed: string) => {
+    const gradesCopy = { ...grades, courseName: changed };
+    setGrades(gradesCopy);
+  };
 
   const handleGradeSave = () => {
     const allGradeCopy = [...allGrades];
@@ -218,7 +235,7 @@ export default function Home() {
       if (grade.courseName === course && i !== gradesIndex) {
         window.alert("This course name is not unique");
         return;
-      }      
+      }
     }
   
     allGradeCopy[gradesIndex] = grades;
@@ -229,182 +246,210 @@ export default function Home() {
   };
   
   return (
-    <div className={`${theme} flex flex-col lg:flex-row min-h-screen`} style={{ backgroundColor: "var(--back  ground-color)" }}>
-      {/* sidebar */}
-      <div className="w-full lg:w-60 p-4 flex justify-between lg:flex-col lg:justify-between lg:justify-center" style={{ backgroundColor: "var(--sidebar-bg-color)" }}>
-        {/* courses */}
-        <div>
-        <h1 className="text-lg font-semibold mb-2" style={{ color: "var(--header-color)" }}>{user && (user?.displayName+ "'s")} Courses</h1>
-        <ul className="flex flex-row overflow-x-auto lg:space-y-2 lg:overflow-y-auto lg:flex-col">
-          {allGrades.map((course, index) => (
-            <li key={index} onClick={() => handleCourseClick(index)}>
-              <span
-                className="p-1 mx-1 block hover:bg-sky-700 rounded text-center cursor-pointer"
-                style={{
-                  backgroundColor: "var(--course-bg-color)",
-                  color: "var(--text-color)"
-                }}
+  <div className="flex">
+    <div className="w-1/12 md:w-1/4"></div>
+    <div className="flex flex-col flex-grow mt-3">
+      {/* Header */}
+      <div className="flex flex-row justify-between text-skin-sub ">
+        <div className="hover:text-skin-main hover:scale-110 transition-transform duration-200 text-xl">GradeSync</div> 
+        <div className="flex gap-2">
+            <div className="relative">
+            <IconPalette 
+              height={30}
+              width={30}
+              stroke-width="1.5" 
+              className="hover:text-skin-main hover:scale-125 transition-transform duration-200 group" 
+            />                 
+            <div className="absolute z-40 left-0 top-full mt-1 w-32 p-2 text-xs text-skin-main bg-skin-highlight rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              Theme functionality to be implemented!
+            </div>
+            </div>
+          {!user ? (
+            <IconUserCircle 
+            height={30}
+            width={30}
+            stroke-width="1.5" 
+            className="hover:text-skin-main hover:scale-125 transition-transform duration-200" 
+            onClick={() => signInWithGoogle()}
+          /> 
+          ) : (
+            <div className="relative group">
+              <img 
+                src={user.photoURL?.toString()} 
+                className="group-hover:hidden rounded-full w-[30px] h-[30px]"
+                alt=""
+              />
+              <IconLogout 
+                height={30}
+                width={30}
+                stroke-width="1.5" 
+                className="hidden group-hover:block hover:text-skin-main hover:scale-125 transition-transform duration-200" 
+                onClick={() => logout()}
+              /> 
+            </div>
+
+          )}
+
+        </div>
+      </div>
+      {/* Main Page Content */}
+
+      <div className="flex flex-row mt-2">
+        {/* The calculator */}
+        <div className="flex-col flex-grow  h-max-full">
+          {/* course name & utils */}
+          <div className="mt-5 text-xl flex justify-between text-skin-sub">
+            <input 
+              className=" bg-transparent hover:text-skin-main border-b-2 border-skin-sub hover:border-skin-main ring-0 focused:ring-0" 
+              value={grades.courseName}
+              onChange={(e) => handleCourseNameChange(e.target.value)}
+            />
+            <div className="flex gap-2">
+            <select
+                className="bg-transparent text-sm border-b-2 border-skin-sub hover:text-skin-main hover:border-skin-main ring-0 focus:ring-0"
+                value={school}
+                onChange={(e) => setSchool(e.target.value)}
               >
+                {gradingSchemes.map((schoolName) => (
+                  <option key={schoolName.name} value={schoolName.name}>{schoolName.name}</option>
+                ))}
+              </select>
+                <div className="relative group">
+                <IconArchive className="hover:text-skin-main hover:scale-125 transition-transform duration-200"/>
+                <div className="absolute z-40 left-0 top-full mt-1 w-32 p-2 text-xs text-skin-main bg-skin-highlight rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                  Archive functionality to be implemented!
+                </div>
+                </div>
+              <IconDeviceFloppy className="hover:text-skin-main hover:scale-125 transition-transform duration-200" onClick={() => handleGradeSave()}/>
+              <IconTrash className="hover:text-skin-main hover:scale-125 transition-transform duration-200" onClick={() => removeCourse()}/>
+            </div>
+
+          </div>    
+          {/* The table */}
+          
+          <div className="bg-skin-fore rounded-lg shadow-lg p-3 mt-2 pt-2">
+
+              {/* The result */}
+              <div className="flex gap-3">
+                <div className="w-1/3">
+                  <div className="flex justify-between">
+                    <div>Percentage</div>
+                    <div className="relative group">
+                      <IconInfoCircle className="hover:text-skin-main hover:scale-125 transition-transform duration-200" />
+                      <div className="z-40 absolute left-0 top-full mb-2 w-64 p-2 text-xs text-skin-main bg-skin-highlight rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      {totalWeight === 100
+                        ? "The grade is calculated as the weighted average of all assessments. For example, if you scored 85% on an assessment worth 40% and 90% on an assessment worth 60%, the grade would be calculated as: (85 × 0.4) + (90 × 0.6) = 88%. GPA and letter grade are determined based on this final percentage, with 0.5 or above rounded up and lower values rounded down."
+                        : "The grade is calculated as the weighted average of all assessments, scaled to 100%. For example, if the total weight of assessments is 80% and you scored 85% on one worth 40% and 90% on another worth 40%, the grade would be calculated as: ((85 × 0.4) + (90 × 0.4)) / 0.8 = 87.5%. GPA and letter grade are determined based on this final percentage, with 0.5 or above rounded up and lower values rounded down."}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-1 py-5 text-center text-xl bg-skin-back rounded-lg shadow-inner">
+                    {calculated}
+                  </div>
+                </div>
+                <div className="w-1/3">
+                  Letter
+                  <div className="mt-1 py-5 text-center text-xl bg-skin-back rounded-lg shadow-inner">
+                    {calculateGradeForSchool(calculated, school)?.letterGrade.toString()}
+                  </div>
+                </div>
+                <div className="w-1/3">
+                  GPA
+                  <div className="mt-1 py-5 text-center text-xl bg-skin-back rounded-lg shadow-inner">
+                    {calculateGradeForSchool(calculated, school)?.gpa.toString()}
+                  </div>
+                </div>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="text-md"> 
+                  <th className="p-2 text-left w-1/3 md:w-1/2">Name</th>
+                  <th className="p-2 text-left w-1/4 md:w-1/6">Marks</th>
+                  <th className="p-2 text-left w-1/6 md:w-1/6">Weight</th>
+                  <th className="p-2 text-left w-1/12 whitespace-nowrap">Bonus</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grades.assessments.map((assessment, index) => (
+                  <tr key={index} className=""> 
+                    <td className="p-0.5 ">
+                      <input 
+                        className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md " 
+                        value={assessment.name}
+                        onChange={(e) => handleTextChange(index, e.target.value)}
+                      />
+                    </td>
+                    <td className="p-0.5">
+                      <div className="flex items-center">
+                        <input 
+                          className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                          value={assessment.marks}
+                          min={0}
+                          onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "marks")}
+                        />/
+                        <input 
+                          className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                          value={assessment.outOf}
+                          min={0}
+                          onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "outOf")}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-0.5">
+                      <input 
+                        className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                        value={assessment.weight}
+                        onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "weight")}
+                        />
+                    </td>
+                    <td className="text-center p-0.5 flex justify-around">
+                    <input 
+                      type="checkbox"
+                      className="appearance-none checkbox-xl peer bg-skin-back rounded-md h-8 w-8 shadow-inner hover:drop-shadow-md cursor-pointer accent-skin-back hover:bg-skin-fore focus:ring-skin-highlight checked:appearance-auto checked:rounded-lg"
+                      checked={Boolean(assessment.isBonus)}
+                      onChange={(e) => handleBonusChange(index, e.target.checked)}
+                    />
+                    <IconTrash className="text-skin-sub hover:text-skin-main mt-1" onClick={() => handleRemoveAssessment(index)}/>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div 
+              className="bg-skin-back p-1 m-1 rounded-lg text-center drop-shadow-lg hover:drop-shadow-none hover:shadow-inner active:bg-skin-highlight"
+              onClick={() => handleAddAssessment()}
+            >+ assessment</div>
+          </div>
+        </div>
+        {/* Course Selector */}
+        <div className="mt-14 ml-4 hidden md:block">
+        <ul className="flex flex-col text-md">
+          {allGrades.map((course, index) => (
+            <li
+              key={index}
+              onClick={() => handleCourseClick(index)}
+              className={`p-2 rounded-xl flex items-center justify-between group hover:shadow-lg mb-1 active:shadow-inner cursor-pointer ${
+                index === gradesIndex ? "bg-skin-highlight text-skin-main" : "hover:bg-skin-highlight"
+              }`}
+            >
+              <span className="text-left truncate max-w-[128px] whitespace-nowrap">
                 {course?.courseName}
               </span>
             </li>
           ))}
-          <li>        <button onClick={handleAddCourse} className="text-center" > 	&#x002B; Add Course</button></li>
-        </ul>
-        </div>
-        {/* login/theme */}
-        <div>
-        <div className="flex flex-col">
-        <div className="flex justify-around ">
-          {user ? (
-            <button onClick={logout} className="w-1/2  p-1 rounded mx-1 bg-[var(--course-bg-color)] text-[var(--text-color)]">Log out </button>
-            ) : (
-              <>
-                <button onClick={signInWithGoogle} className="w-1/2  p-1 rounded mx-1 bg-[var(--course-bg-color)] text-[var(--text-color)]">Login</button>
-                <button onClick={signInWithGoogle} className="w-1/2 p-1 rounded mx-1 bg-[var(--course-bg-color)] text-[var(--text-color)]">Signup</button>
-              </>
-            )
-          }
-          </div>
-          <button
-            onClick={handleThemeChange}
-            style={{
-              backgroundColor: "var(--button-bg-color)",
-              color: "var(--text-color)"
-            }}
-            className="py-1 rounded hover:bg-[var(--button-hover-color)] mt-3 mx-1"
+          <li
+            className="p-2 hover:bg-skin-highlight hover:pl-4 rounded-xl text-sm flex text-center hover:shadow-lg cursor-pointer"
+            onClick={() => handleAddCourse()}
           >
-            Toggle Theme
-          </button>
+            + course
+          </li>
+        </ul>
 
         </div>
-    </div>
 
       </div>
-
-      <div className="w-full lg:w-5/6 p-4" style={{ color: "var(--text-color)" }}>
-        <h1 className="text-2xl font-bold mb-4">Grade Calculator</h1>
-        <span className="flex w-[480px] justify-between items-center">
-          <h2 className="text-xl mb-4" style={{ color: "var(--header-color)" }}>
-            <input  value={grades.courseName} onChange={(e) => handleCourseNameChange(e.target.value)}></input>
-          </h2>
-          <button onClick={() => removeCourse()} className="text-red-500 hover:underline">  
-              &#10060; Remove 
-          </button>
-        </span>
-
-        <div className="overflow-x-auto">
-          <table className="w-500 border" style={{ borderColor: "var(--border-color)", backgroundColor: "var(--table-bg-color)" }}>
-            <thead>
-              <tr style={{ backgroundColor: "var(--table-bg-color)", borderColor: "var(--border-color)" }}>
-                <th className="p-2 text-left" style={{ color: "var(--header-color)" }}>Name</th>
-                <th className="p-2 text-left" style={{ color: "var(--header-color)" }}>Marks</th>
-                <th className="p-2 text-left" style={{ color: "var(--header-color)" }}>Weight</th>
-                <th className="p-2 text-left" style={{ color: "var(--header-color)" }}>Bonus</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grades.assessments.map((assessment, index) => (
-                <tr key={index} className="border-b" style={{ borderColor: "var(--border-color)" }}>
-                  <td className="p-2">
-                    <input
-                      value={assessment.name}
-                      type="text"
-                      className="w-full border px-1"
-                      onChange={(e) => handleTextChange(index, e.target.value, "name")}
-                      style={{
-                        backgroundColor: "var(--table-bg-color)",
-                        color: "var(--text-color)",
-                        borderColor: "var(--border-color)"
-                      }}
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      value={assessment.marks}
-                      type="text"
-                      min={0}
-                      onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "marks")}
-                      className="w-14 border px-1"
-                      style={{
-                        backgroundColor: "var(--table-bg-color)",
-                        color: "var(--text-color)",
-                        borderColor: "var(--border-color)"
-                      }}
-                    />
-                    /
-                    <input
-                      value={assessment.outOf}
-                      type="number"
-                      min={0}
-                      onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "outOf")}
-                      className="w-14 border px-1"
-                      style={{
-                        backgroundColor: "var(--table-bg-color)",
-                        color: "var(--text-color)",
-                        borderColor: "var(--border-color)"
-                      }}
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      value={assessment.weight}
-                      type="number"
-                      min={0}
-                      onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "weight")}
-                      className="w-14 border px-1"
-                      style={{
-                        backgroundColor: "var(--table-bg-color)",
-                        color: "var(--text-color)",
-                        borderColor: "var(--border-color)"
-                      }}
-                    />
-                  </td>
-                  <td className="p-2 text-center">
-                    <input
-                      type="checkbox"
-                      className="form-checkbox"
-                      value={assessment.isBonus}
-                      onChange={(e) => handleBonusChange(index, e.target.value)}
-                      style={{
-                        accentColor: "var(--button-bg-color)"
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="flex w-[480px] justify-between items-center">
-          <button
-          onClick={() => handleAddAssessment()}
-          className="mt-4 py-1 px-4 rounded"
-          style={{
-            backgroundColor: "var(--button-bg-color)",
-            color: "var(--text-color)"
-          }}
-        >
-          Add assessment
-        </button>
-        <button onClick={handleGradeSave}> &#128190; Save </button>
-          </div>
-          
-        </div>
-
-        
-        <div className="mt-4 text-lg font-medium flex items-center">
-          Calculated Grade: {calculated}
-          {totalWeight !== 100 && (
-            <div className="ml-2 relative group">
-              <span className="text-red-500 font-bold">!</span>
-              <div className="absolute left-0 mt-2 w-48 p-2 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Note: The weight does not sum to 100, so a different algorithm is being used.
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
     </div>
+    <div className="w-1/12 md:w-1/4"></div>
+  </div>
   );
 }
