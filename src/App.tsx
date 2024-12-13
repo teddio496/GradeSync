@@ -4,7 +4,12 @@ import { writeGrades, readGrades } from "./component/database";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { grade, assessment, gradingSchemes, calculateGradeForSchool } from "./types/type";
 import toast from "react-hot-toast";
+import ConfirmationDialog from "./component/ConfirmationDialog";
 import { IconPalette, IconUserCircle, IconDeviceFloppy, IconArchive, IconTrash, IconLogout, IconInfoCircle } from "@tabler/icons-react";
+
+interface AppProps {
+  onThemeToggle: () => void; // The prop is a function
+}
 
 const example: grade = {
   courseName: "Course Name",
@@ -16,7 +21,7 @@ const example: grade = {
   ]
 }
 
-export default function Home() {
+const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
 
   const [allGrades, setAllGrades] = useState<grade[]>([example]);
   const [grades, setGrades] = useState<grade>(allGrades[0]);
@@ -25,6 +30,21 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [totalWeight, setTotalWeight] = useState(0);
   const [school, setSchool] = useState("UofT");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [dialogAction, setDialogAction] = useState<() => void>(() => () => {});
+
+  const openLogoutDialog = () => {
+    setDialogMessage("Are you sure you want to log out?");
+    setDialogAction(() => logout);
+    setIsDialogOpen(true);
+  };
+
+  const openRemoveCourseDialog = () => {
+    setDialogMessage("Are you sure you want to remove this course?");
+    setDialogAction(() => removeCourse);
+    setIsDialogOpen(true);
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(setUser); 
@@ -37,6 +57,13 @@ export default function Home() {
         const user_grades = await readGrades();
         if (user_grades) {
           user_grades.forEach((grade: grade) => {if (!grade.school) {grade.school = "UofT";}});
+          user_grades.forEach((grade: grade) => {
+            grade.assessments.forEach((assessment: assessment) => {
+              assessment.marks = Number(assessment.marks);
+              assessment.weight = Number(assessment.weight);
+              assessment.outOf = Number(assessment.outOf);
+            });
+          });
           setAllGrades(user_grades);
           setGrades(user_grades[0]);
           localStorage.setItem("allGrades", JSON.stringify(user_grades));
@@ -63,9 +90,9 @@ export default function Home() {
       await signOut(auth);
       localStorage.removeItem("allGrades");
       localStorage.removeItem("theme"); 
-      
       setAllGrades([example]);
       setGrades(example)
+      toast("Successfully logged out!")
     } catch (err) {
       console.error(err);
     }
@@ -81,7 +108,7 @@ export default function Home() {
         setAllGrades(user_grades);
         setGrades(user_grades[0]);
       }
-
+      toast("Successfully logged in!")
     } catch (err) {
       console.error(err);
     }
@@ -93,7 +120,6 @@ export default function Home() {
     assessments.forEach((assessment) => weight += assessment.isBonus ? 0 : assessment.weight)
     
     setTotalWeight(weight); 
-    console.log(weight);
 
     if (weight === 100) {
       let acc = 0;
@@ -180,14 +206,13 @@ export default function Home() {
       if (!proceed) return;
     }
 
-    const newGrades = [...allGrades, example];
+    const newGrades = [example, ...allGrades];
     
     setAllGrades(newGrades);
     setGrades(example); 
     setGradesIndex(newGrades.length - 1);
     toast("course added")
   };
-  
 
   const removeCourse = async () => {
     const course = grades.courseName;
@@ -257,8 +282,9 @@ export default function Home() {
             <IconPalette 
               height={30}
               width={30}
-              stroke-width="1.5" 
+              strokeWidth="1.5" 
               className="hover:text-skin-main hover:scale-125 transition-transform duration-200 group" 
+              onClick={onThemeToggle}
             />                 
             <div className="absolute z-40 left-0 top-full mt-1 w-32 p-2 text-xs text-skin-main bg-skin-highlight rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
               Theme functionality to be implemented!
@@ -268,26 +294,25 @@ export default function Home() {
             <IconUserCircle 
             height={30}
             width={30}
-            stroke-width="1.5" 
+            strokeWidth="1.5" 
             className="hover:text-skin-main hover:scale-125 transition-transform duration-200" 
             onClick={() => signInWithGoogle()}
           /> 
           ) : (
-            <div className="relative group">
-              <img 
-                src={user.photoURL?.toString()} 
-                className="group-hover:hidden rounded-full w-[30px] h-[30px]"
-                alt=""
-              />
-              <IconLogout 
-                height={30}
-                width={30}
-                stroke-width="1.5" 
-                className="hidden group-hover:block hover:text-skin-main hover:scale-125 transition-transform duration-200" 
-                onClick={() => logout()}
-              /> 
-            </div>
-
+          <div className="relative group w-[30px] h-[30px]">
+            <img 
+              src={user.photoURL?.toString()} 
+              className="rounded-full w-full h-full group-hover:hidden"
+              alt="User Avatar"
+            />
+            <IconLogout 
+              height={30}
+              width={30}
+              strokeWidth="1.5" 
+              className="absolute top-0 left-0 w-full h-full hidden group-hover:block hover:text-skin-main" 
+              onClick={openLogoutDialog}
+            /> 
+          </div>
           )}
 
         </div>
@@ -321,13 +346,13 @@ export default function Home() {
                 </div>
                 </div>
               <IconDeviceFloppy className="hover:text-skin-main hover:scale-125 transition-transform duration-200" onClick={() => handleGradeSave()}/>
-              <IconTrash className="hover:text-skin-main hover:scale-125 transition-transform duration-200" onClick={() => removeCourse()}/>
+              <IconTrash className="hover:text-skin-main hover:scale-125 transition-transform duration-200" onClick={openRemoveCourseDialog}/>
             </div>
 
           </div>    
           {/* The table */}
           
-          <div className="bg-skin-fore rounded-lg shadow-lg p-3 mt-2 pt-2">
+          <div className="bg-skin-fore rounded-lg shadow-lg p-3 mt-2 pt-2 max-h-[80vh] overflow-y-auto">
 
               {/* The result */}
               <div className="flex gap-3">
@@ -374,7 +399,7 @@ export default function Home() {
                   <tr key={index} className=""> 
                     <td className="p-0.5 ">
                       <input 
-                        className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md " 
+                        className="w-full bg-skin-back rounded-md shadow-inner p-1 pl-2 hover:drop-shadow-md " 
                         value={assessment.name}
                         onChange={(e) => handleTextChange(index, e.target.value)}
                       />
@@ -382,13 +407,13 @@ export default function Home() {
                     <td className="p-0.5">
                       <div className="flex items-center">
                         <input 
-                          className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                          className="w-full bg-skin-back rounded-md shadow-inner p-1 pl-2 hover:drop-shadow-md" 
                           value={assessment.marks}
                           min={0}
                           onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "marks")}
                         />/
                         <input 
-                          className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                          className="w-full bg-skin-back rounded-md shadow-inner p-1 pl-2 hover:drop-shadow-md" 
                           value={assessment.outOf}
                           min={0}
                           onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "outOf")}
@@ -397,7 +422,7 @@ export default function Home() {
                     </td>
                     <td className="p-0.5">
                       <input 
-                        className="w-full bg-skin-back rounded-md shadow-inner p-1 hover:drop-shadow-md" 
+                        className="w-full bg-skin-back rounded-md shadow-inner p-1 pl-2 hover:drop-shadow-md" 
                         value={assessment.weight}
                         onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9.]/g, ""), "weight")}
                         />
@@ -416,40 +441,52 @@ export default function Home() {
               </tbody>
             </table>
             <div 
-              className="bg-skin-back p-1 m-1 rounded-lg text-center drop-shadow-lg hover:drop-shadow-none hover:shadow-inner active:bg-skin-highlight"
+              className="bg-skin-back p-1 m-1 rounded-lg text-center drop-shadow-md hover:drop-shadow-none hover:shadow-inner active:bg-skin-highlight"
               onClick={() => handleAddAssessment()}
             >+ assessment</div>
           </div>
         </div>
         {/* Course Selector */}
         <div className="mt-14 ml-4 hidden md:block">
-        <ul className="flex flex-col text-md">
-          {allGrades.map((course, index) => (
-            <li
-              key={index}
-              onClick={() => handleCourseClick(index)}
-              className={`p-2 rounded-xl flex items-center justify-between group hover:shadow-lg mb-1 active:shadow-inner cursor-pointer ${
-                index === gradesIndex ? "bg-skin-highlight text-skin-main" : "hover:bg-skin-highlight"
-              }`}
-            >
-              <span className="text-left truncate max-w-[128px] whitespace-nowrap">
-                {course?.courseName}
-              </span>
-            </li>
-          ))}
+          <ul className="flex flex-col text-md overflow-y-auto h-[80vh]">
           <li
-            className="p-2 hover:bg-skin-highlight hover:pl-4 rounded-xl text-sm flex text-center hover:shadow-lg cursor-pointer"
-            onClick={() => handleAddCourse()}
-          >
-            + course
-          </li>
-        </ul>
+              className="p-2 hover:bg-skin-highlight  rounded-xl text-sm flex text-center whitespace-nowrap hover:shadow-lg cursor-pointer"
+              onClick={() => handleAddCourse()}
+            >
+              + course
+            </li>
+            {allGrades.map((course, index) => (
+              <li
+                key={index}
+                onClick={() => handleCourseClick(index)}
+                className={`p-2 rounded-xl flex items-center justify-between group hover:shadow-lg mb-1 active:shadow-inner cursor-pointer ${
+                  index === gradesIndex ? "bg-skin-highlight text-skin-main" : "hover:bg-skin-highlight"}`}
+              >
+                <span className="text-left truncate max-w-[128px] whitespace-nowrap">
+                  {course?.courseName}
+                </span>
+              </li>
+            ))}
 
+          </ul>
         </div>
 
       </div>
     </div>
     <div className="w-1/12 md:w-1/4"></div>
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isDialogOpen}
+        message={dialogMessage}
+        onConfirm={() => {
+          dialogAction();
+          setIsDialogOpen(false);
+        }}
+        onCancel={() => setIsDialogOpen(false)}
+      />
   </div>
   );
 }
+
+
+export default Home;

@@ -17,8 +17,22 @@
     --color-highlight: #2F2F2F;
     --color-text-sub: gray;
   }
+  .theme-pink {
+    --color-text-base: #6d214f;
+    --color-background: #F9F5F6;
+    --color-foreground: #F8E8EE;
+    --color-highlight: #fbd3e2;
+    --color-text-sub: #F2BED1;
+  }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-text-base);
+    height: 100%; /* Ensure the body covers the full height */
+    margin: 0;
+  }
 }
-/*
+
+
 :root {
   --background-color: #0077b6;
   --sidebar-bg-color: #03045e;
@@ -118,15 +132,4 @@
   --border-color: #b2ebf2;
 }
 
-.theme-pastel {
-  --background-color: #ffebf3;
-  --sidebar-bg-color: #ffe1ea;
-  --course-bg-color: #ffd6e8;
-  --button-bg-color: #ff9aa2;
-  --button-hover-color: #ff758f;
-  --text-color: #6d214f;
-  --header-color: #c44569;
-  --table-bg-color: #ffffff;
-  --border-color: #f7c1d2;
-}
-*/
+
