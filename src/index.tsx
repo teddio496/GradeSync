@@ -29,7 +29,7 @@ const ThemedApp = () => {
   }, [theme]);
 
   return (
-    <div className={`${theme} bg-skin-back text-skin-main font-sometype h-[100vh]`}>
+    <div className={`${theme} bg-skin-back text-skin-main font-sometype`}>
       <App onThemeToggle={toggleTheme} />
       <Toaster />
     </div>

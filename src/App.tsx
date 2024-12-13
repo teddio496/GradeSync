@@ -210,39 +210,33 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
     
     setAllGrades(newGrades);
     setGrades(example); 
-    setGradesIndex(newGrades.length - 1);
+    setGradesIndex(0);
     toast("course added")
   };
 
-  const removeCourse = async () => {
-    const course = grades.courseName;
-    const isConfirmed = window.confirm(`Are you sure you want to delete the course "${course}"?`);
-  
-    if (isConfirmed) {
-      const allGradeCopy = [...allGrades];
-      const index = gradesIndex;
-      if (allGradeCopy.length === 1){ 
-        toast("Cannot remove, Only one left!");
-        return;
-      }
-      if (index !== -1) {
-        allGradeCopy.splice(index, 1);
-        setAllGrades(allGradeCopy);
-        await writeGrades(allGradeCopy);
-        localStorage.setItem("allGrades", JSON.stringify(allGradeCopy));
-  
-        if (index === 0 && allGrades.length > 1) {
-          setGrades(JSON.parse(JSON.stringify(allGrades[1])));
-          setGradesIndex(1);
-        } else if (allGrades.length > 0) {
-          setGrades(JSON.parse(JSON.stringify(allGrades[0])));
-          setGradesIndex(0);
-        } else {
-          setGrades(example); // Use default example if no grades are left
-        }
+  const removeCourse = async () => {  
+    const allGradeCopy = [...allGrades];
+    const index = gradesIndex;
+    if (allGradeCopy.length === 1){ 
+      toast("Cannot remove, Only one left!");
+      return;
+    }
+    if (index !== -1) {
+      allGradeCopy.splice(index, 1);
+      setAllGrades(allGradeCopy);
+      await writeGrades(allGradeCopy);
+      localStorage.setItem("allGrades", JSON.stringify(allGradeCopy));
+
+      if (index === 0 && allGrades.length > 1) {
+        setGrades(JSON.parse(JSON.stringify(allGrades[1])));
+        setGradesIndex(1);
+      } else if (allGrades.length > 0) {
+        setGrades(JSON.parse(JSON.stringify(allGrades[0])));
+        setGradesIndex(0);
+      } else {
+        setGrades(example); 
       }
     }
-
     toast("course removed")
   };
 
@@ -272,8 +266,8 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
   
   return (
   <div className="flex">
-    <div className="w-1/12 md:w-1/4"></div>
-    <div className="flex flex-col flex-grow mt-3">
+    <div className="md:w-1/5"></div>
+    <div className="flex flex-col max-w-[95vw] md:w-3/5 mt-3">
       {/* Header */}
       <div className="flex flex-row justify-between text-skin-sub ">
         <div className="hover:text-skin-main hover:scale-110 transition-transform duration-200 text-xl">GradeSync</div> 
@@ -318,14 +312,13 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
         </div>
       </div>
       {/* Main Page Content */}
-
       <div className="flex flex-row mt-2">
         {/* The calculator */}
-        <div className="flex-col flex-grow  h-max-full">
+        <div className="flex-col h-max-full max-w-full">
           {/* course name & utils */}
           <div className="mt-5 text-xl flex justify-between text-skin-sub">
             <input 
-              className=" bg-transparent hover:text-skin-main border-b-2 border-skin-sub hover:border-skin-main ring-0 focused:ring-0" 
+              className="max-w-[50%] bg-transparent hover:text-skin-main border-b-2 border-skin-sub hover:border-skin-main ring-0 focused:ring-0" 
               value={grades.courseName}
               onChange={(e) => handleCourseNameChange(e.target.value)}
             />
@@ -351,9 +344,7 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
 
           </div>    
           {/* The table */}
-          
-          <div className="bg-skin-fore rounded-lg shadow-lg p-3 mt-2 pt-2 max-h-[80vh] overflow-y-auto">
-
+          <div className="bg-skin-fore rounded-lg shadow-lg p-3 mt-2 pt-2 max-h-[80vh] overflow-y-auto overflow-x-hidden">
               {/* The result */}
               <div className="flex gap-3">
                 <div className="w-1/3">
@@ -384,14 +375,14 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
                     {calculateGradeForSchool(calculated, school)?.gpa.toString()}
                   </div>
                 </div>
-            </div>
-            <table className="w-full">
+              </div>
+            <table className="w-auto">
               <thead>
                 <tr className="text-md"> 
                   <th className="p-2 text-left w-1/3 md:w-1/2">Name</th>
-                  <th className="p-2 text-left w-1/4 md:w-1/6">Marks</th>
-                  <th className="p-2 text-left w-1/6 md:w-1/6">Weight</th>
-                  <th className="p-2 text-left w-1/12 whitespace-nowrap">Bonus</th>
+                  <th className="p-2 text-left w-1/3 md:w-1/6">Marks</th>
+                  <th className="p-2 text-left w-1/8 md:w-1/6">Weight</th>
+                  <th className="p-2 text-left w-1/8 whitespace-nowrap">Bonus</th>
                 </tr>
               </thead>
               <tbody>
@@ -445,6 +436,7 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
               onClick={() => handleAddAssessment()}
             >+ assessment</div>
           </div>
+
         </div>
         {/* Course Selector */}
         <div className="mt-14 ml-4 hidden md:block">
@@ -473,7 +465,7 @@ const Home: React.FC<AppProps> = ({ onThemeToggle }) => {
 
       </div>
     </div>
-    <div className="w-1/12 md:w-1/4"></div>
+    <div className="md:w-1/5"></div>
       {/* Confirmation Dialog */}
       <ConfirmationDialog
         open={isDialogOpen}
