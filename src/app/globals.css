@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'SomeType'; 
+  src: url('/src/app/fonts/SometypeMono.ttf') format('ttf');
+  font-weight: normal; 
+  font-style: normal;  
+}
+
+@layer base {
+  :root {
+      --color-text-base: #FFFFFF;
+      --color-background: #3F3F3F;
+      --color-foreground: #444444;
+      --color-highlight: #2F2F2F;
+      --color-text-sub: gray;
+    }
+    .theme-pink {
+      --color-text-base: #6d214f;
+      --color-background: #F9F5F6;
+      --color-foreground: #F8E8EE;
+      --color-highlight: #fbd3e2;
+      --color-text-sub: #F2BED1;
+    }
+    .theme-blue {
+      --color-text-base: #1B4F72;
+      --color-background: #E8F6F3;
+      --color-foreground: #D6EAF8;
+      --color-highlight: #AED6F1;
+      --color-text-sub: #5DADE2;
+  }
+
+  .theme-green {
+      --color-text-base: #145A32;
+      --color-background: #EAF2E3;
+      --color-foreground: #D5E8D4;
+      --color-highlight: #ABEBC6;
+      --color-text-sub: #82E0AA;
+  }
+
+  .theme-orange {
+      --color-text-base: #784212;
+      --color-background: #FDF2E9;
+      --color-foreground: #FAD7A0;
+      --color-highlight: #F5B041;
+      --color-text-sub: #F8C471;
+  }
+
+  .theme-purple {
+      --color-text-base: #4A235A;
+      --color-background: #F4ECF7;
+      --color-foreground: #D7BDE2;
+      --color-highlight: #BB8FCE;
+      --color-text-sub: #A569BD;
+  }
+
+  .theme-yellow {
+      --color-text-base: #7D6608;
+      --color-background: #FEF9E7;
+      --color-foreground: #FDEBD0;
+      --color-highlight: #F9E79F;
+      --color-text-sub: #F7DC6F;
+  }
+
+  .theme-red {
+      --color-text-base: #641E16;
+      --color-background: #FDEDEC;
+      --color-foreground: #F5B7B1;
+      --color-highlight: #F1948A;
+      --color-text-sub: #CD6155;
+  }
+
+  .theme-teal {
+      --color-text-base: #004D40;
+      --color-background: #E0F2F1;
+      --color-foreground: #B2DFDB;
+      --color-highlight: #80CBC4;
+      --color-text-sub: #4DB6AC;
+  }
+
+  .theme-gray {
+      --color-text-base: #2C3E50;
+      --color-background: #ECF0F1;
+      --color-foreground: #BDC3C7;
+      --color-highlight: #95A5A6;
+      --color-text-sub: #7F8C8D;
+  }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-text-base);
+    height: 100%;
+    width: 100%; /* Ensure the body covers the full height */
+    margin: 0;
+  }
+  #root {
+    height: 100%;
+    width: 100%;
+}
+}

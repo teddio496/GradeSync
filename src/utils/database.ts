@@ -1,12 +1,10 @@
 import { doc, setDoc, getDoc } from "firebase/firestore"; 
 import { db, auth } from './firebaseConfig';
-import { grade, assessment } from "../types/type";
+import { grade, assessment } from "../app/component/types/type";
 
 export const writeGrades = async (grades: grade[]) => {
     const user = auth.currentUser;
     if (user) {
-        console.log(user.uid);
-        console.log(grades);
         await setDoc(
             doc(db, "users", user.uid), 
             {
@@ -21,14 +19,11 @@ export const writeGrades = async (grades: grade[]) => {
 export const readGrades = async () => {
     const user = auth.currentUser;
     if (user) {
-        console.log(user.uid);
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            console.log("Document data:", docSnap.data().grades);
             return docSnap.data().grades
         } else {
-            console.log("No such document!");
         }
     } else {
         console.error("No authenticated user found.");

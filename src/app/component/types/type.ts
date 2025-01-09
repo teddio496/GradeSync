@@ -1,8 +1,8 @@
 export interface assessment {
     name: string;
-    marks: number;
-    outOf: number;
-    weight: number;
+    marks: string;
+    outOf: string;
+    weight: string;
     isBonus: Boolean;
 }
 
@@ -10,6 +10,8 @@ export interface grade {
     courseName: string;
     school: string;
     assessments: assessment[];
+    finalGrade: number | undefined;
+    totalWeight: number| undefined;
 }
 
 export type GradeRange = {
@@ -58,14 +60,24 @@ export const calculateGradeForSchool = (percentage: number, schoolName: string):
             return { letterGrade: bestGrade.letter, gpa: bestGrade.gpa };
         }
     }
+
     const grade = school.gradingRanges.find((range) => {
         return rounded >= range.minPercentage && rounded <= range.maxPercentage;
     });
 
     if (!grade) {
-        console.error("No grade found for the given percentage.");
         return null;
     }
 
     return { letterGrade: grade.letter, gpa: grade.gpa };
 };
+
+
+export const getGradeForSchool = (schoolName: string ) => {
+    const school = gradingSchemes.find(s => s.name === schoolName);
+    if (!school) {
+        console.error(`Grading scheme for ${schoolName} not found.`);
+        return []
+    }
+    return school.gradingRanges;
+}
